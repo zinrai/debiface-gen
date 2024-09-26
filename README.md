@@ -1,6 +1,6 @@
 # debiface-gen
 
-debiface-gen is a Debian Network Interface Configuration Generator. It provides a command-line interface and an HTTP API for generating network interface configurations compatible with Debian's interfaces(5) format.
+`debiface-gen` is a Debian Network Interface Configuration Generator. It provides a command-line interface and an HTTP API for generating network interface configurations compatible with Debian's interfaces(5) format.
 
 ## Features
 
@@ -8,6 +8,7 @@ debiface-gen is a Debian Network Interface Configuration Generator. It provides 
   - Bonding interfaces
   - DSR (Direct Server Return) interfaces
   - Standard network interfaces
+  - Bridge interfaces
 - Command-line interface
 - HTTP API
 
@@ -23,7 +24,7 @@ $ go build
 
 ### Command-line Interface
 
-debiface-gen provides three subcommands: `bonding`, `dsr`, and `standard`.
+debiface-gen provides four subcommands: `bonding`, `dsr`, `standard`, and `bridge`.
 
 #### Bonding Configuration
 
@@ -58,6 +59,15 @@ debiface-gen standard \
   -ip 192.168.2.10 \
   -netmask 255.255.255.0 \
   -gateway 192.168.2.1
+```
+
+#### Bridge Configuration
+
+```bash
+debiface-gen bridge \
+  -auto \
+  -iface br0 \
+  -bridge-ports "eth0 eth1"
 ```
 
 ### HTTP API
@@ -114,6 +124,18 @@ curl -X POST http://localhost:8080/api/standard \
   }'
 ```
 
+#### Bridge Configuration
+
+```bash
+curl -X POST http://localhost:8080/api/bridge \
+  -H "Content-Type: application/json" \
+  -d '{
+    "AutoIfaceUp": true,
+    "Iface": "br0",
+    "BridgePorts": ["eth0", "eth1"]
+  }'
+```
+
 ## Project Structure and Clean Architecture
 
 This project follows the principles of Clean Architecture to ensure separation of concerns and maintainability. Here's an overview of the directory structure and its alignment with Clean Architecture:
@@ -134,7 +156,7 @@ debiface-gen/
 ### Clean Architecture Layers
 
 1. **Entities (config/types.go)**:
-   - Contains the core data structures (BondingConfig, DSRConfig, StandardConfig).
+   - Contains the core data structures (BondingConfig, DSRConfig, StandardConfig, BridgeConfig).
    - These are independent of any framework or external agency.
 
 2. **Use Cases (config/generator.go)**:

@@ -76,3 +76,16 @@ func GenerateStandardConfig(cfg StandardConfig) string {
 
 	return sb.String()
 }
+
+func GenerateBridgeConfig(cfg BridgeConfig) string {
+	var sb strings.Builder
+
+	if cfg.AutoIfaceUp {
+		sb.WriteString(fmt.Sprintf("auto %s\n", cfg.Iface))
+	}
+
+	sb.WriteString(fmt.Sprintf("iface %s inet manual\n", cfg.Iface))
+	sb.WriteString(fmt.Sprintf("    bridge_ports %s\n", strings.Join(cfg.BridgePorts, " ")))
+
+	return sb.String()
+}

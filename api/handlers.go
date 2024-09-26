@@ -57,3 +57,20 @@ func HandleStandard(w http.ResponseWriter, r *http.Request) {
 	result := config.GenerateStandardConfig(cfg)
 	json.NewEncoder(w).Encode(map[string]string{"config": result})
 }
+
+func HandleBridge(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var cfg config.BridgeConfig
+	err := json.NewDecoder(r.Body).Decode(&cfg)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	result := config.GenerateBridgeConfig(cfg)
+	json.NewEncoder(w).Encode(map[string]string{"config": result})
+}

@@ -27,3 +27,10 @@ type StandardConfig struct {
 	Netmask     string
 	Gateway     string
 }
+
+// https://wiki.debian.org/BridgeNetworkConnections
+type BridgeConfig struct {
+	AutoIfaceUp bool
+	Iface       string
+	BridgePorts []string
+}

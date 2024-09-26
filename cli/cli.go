@@ -12,6 +12,7 @@ func Run() {
 	bondingCmd := flag.NewFlagSet("bonding", flag.ExitOnError)
 	dsrCmd := flag.NewFlagSet("dsr", flag.ExitOnError)
 	standardCmd := flag.NewFlagSet("standard", flag.ExitOnError)
+	bridgeCmd := flag.NewFlagSet("bridge", flag.ExitOnError)
 
 	// Bonding flags
 	bondingAuto := bondingCmd.Bool("auto", false, "Up interface after reboot")
@@ -36,8 +37,13 @@ func Run() {
 	standardNetmask := standardCmd.String("netmask", "", "Netmask")
 	standardGateway := standardCmd.String("gateway", "", "Gateway")
 
+	// Bridge flags
+	bridgeAuto := bridgeCmd.Bool("auto", false, "Up interface after reboot")
+	bridgeIface := bridgeCmd.String("iface", "", "Interface name")
+	bridgePorts := bridgeCmd.String("bridge-ports", "", "Bridge ports (space-separated)")
+
 	if len(flag.Args()) < 1 {
-		fmt.Println("Expected 'bonding', 'dsr', or 'standard' subcommands")
+		fmt.Println("Expected 'bonding', 'dsr', 'standard', or 'bridge' subcommands")
 		return
 	}
 
@@ -83,7 +89,16 @@ func Run() {
 		}
 		fmt.Println(config.GenerateStandardConfig(cfg))
 
+	case "bridge":
+		bridgeCmd.Parse(flag.Args()[1:])
+		cfg := config.BridgeConfig{
+			AutoIfaceUp: *bridgeAuto,
+			Iface:       *bridgeIface,
+			BridgePorts: strings.Fields(*bridgePorts),
+		}
+		fmt.Println(config.GenerateBridgeConfig(cfg))
+
 	default:
-		fmt.Println("Expected 'bonding', 'dsr', or 'standard' subcommands")
+		fmt.Println("Expected 'bonding', 'dsr', 'standard', or 'bridge' subcommands")
 	}
 }

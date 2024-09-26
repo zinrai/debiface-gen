@@ -22,6 +22,7 @@ func main() {
 		fmt.Println("  bonding   Generate bonding configuration")
 		fmt.Println("  dsr       Generate DSR configuration")
 		fmt.Println("  standard  Generate standard interface configuration")
+		fmt.Println("  bridge    Generate bridge configuration")
 		fmt.Println("\nUse 'debiface-gen <command> --help' for more information about a command")
 	}
 	flag.Parse()
@@ -37,6 +38,7 @@ func startServer() {
 	http.HandleFunc("/api/bonding", api.HandleBonding)
 	http.HandleFunc("/api/dsr", api.HandleDSR)
 	http.HandleFunc("/api/standard", api.HandleStandard)
+	http.HandleFunc("/api/bridge", api.HandleBridge)
 
 	fmt.Println("debiface-gen server starting on :8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))
