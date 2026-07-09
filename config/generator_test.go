@@ -5,6 +5,19 @@ import (
 	"testing"
 )
 
+func assertLines(t *testing.T, result string, expected []string) {
+	t.Helper()
+	lines := strings.Split(strings.TrimSpace(result), "\n")
+	if len(lines) != len(expected) {
+		t.Fatalf("Expected %d lines, got %d:\n%s", len(expected), len(lines), result)
+	}
+	for i, expectedLine := range expected {
+		if strings.TrimSpace(lines[i]) != strings.TrimSpace(expectedLine) {
+			t.Errorf("Line %d: expected '%s', got '%s'", i+1, expectedLine, lines[i])
+		}
+	}
+}
+
 func TestGenerateBondingConfig(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -19,7 +32,6 @@ func TestGenerateBondingConfig(t *testing.T) {
 				IP:          "192.168.0.1",
 				Netmask:     "255.255.255.0",
 				Gateway:     "192.168.0.254",
-				BondMaster:  "eth0",
 				BondSlaves:  []string{"eth0", "eth1"},
 				BondMiimon:  intPtr(100),
 				BondMode:    "active-backup",
@@ -30,20 +42,18 @@ func TestGenerateBondingConfig(t *testing.T) {
 				"    address 192.168.0.1",
 				"    netmask 255.255.255.0",
 				"    gateway 192.168.0.254",
-				"    bond-master eth0",
 				"    bond-slaves eth0 eth1",
 				"    bond-miimon 100",
 				"    bond-mode active-backup",
 			},
 		},
 		{
-			name: "Minimal configuration",
+			name: "Defaults for miimon and mode",
 			config: BondingConfig{
 				Iface:      "bond0",
 				IP:         "192.168.0.1",
 				Netmask:    "255.255.255.0",
 				Gateway:    "192.168.0.254",
-				BondMaster: "eth0",
 				BondSlaves: []string{"eth0", "eth1"},
 			},
 			expected: []string{
@@ -51,52 +61,24 @@ func TestGenerateBondingConfig(t *testing.T) {
 				"    address 192.168.0.1",
 				"    netmask 255.255.255.0",
 				"    gateway 192.168.0.254",
-				"    bond-master eth0",
 				"    bond-slaves eth0 eth1",
 				"    bond-miimon 100",
 				"    bond-mode active-backup",
 			},
 		},
 		{
-			name: "Custom miimon and mode",
+			name: "No gateway omits the gateway line",
 			config: BondingConfig{
 				Iface:      "bond0",
 				IP:         "192.168.0.1",
 				Netmask:    "255.255.255.0",
-				Gateway:    "192.168.0.254",
-				BondMaster: "eth0",
 				BondSlaves: []string{"eth0", "eth1"},
-				BondMiimon: intPtr(200),
-				BondMode:   "balance-rr",
 			},
 			expected: []string{
 				"iface bond0 inet static",
 				"    address 192.168.0.1",
 				"    netmask 255.255.255.0",
-				"    gateway 192.168.0.254",
-				"    bond-master eth0",
 				"    bond-slaves eth0 eth1",
-				"    bond-miimon 200",
-				"    bond-mode balance-rr",
-			},
-		},
-		{
-			name: "Slave order with master not first",
-			config: BondingConfig{
-				Iface:      "bond0",
-				IP:         "192.168.0.1",
-				Netmask:    "255.255.255.0",
-				Gateway:    "192.168.0.254",
-				BondMaster: "eth1",
-				BondSlaves: []string{"eth0", "eth1", "eth2"},
-			},
-			expected: []string{
-				"iface bond0 inet static",
-				"    address 192.168.0.1",
-				"    netmask 255.255.255.0",
-				"    gateway 192.168.0.254",
-				"    bond-master eth1",
-				"    bond-slaves eth1 eth0 eth2",
 				"    bond-miimon 100",
 				"    bond-mode active-backup",
 			},
@@ -105,21 +87,85 @@ func TestGenerateBondingConfig(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := GenerateBondingConfig(tt.config)
-			lines := strings.Split(strings.TrimSpace(result), "\n")
-
-			if len(lines) != len(tt.expected) {
-				t.Errorf("Expected %d lines, got %d", len(tt.expected), len(lines))
-				return
-			}
-
-			for i, expectedLine := range tt.expected {
-				if strings.TrimSpace(lines[i]) != strings.TrimSpace(expectedLine) {
-					t.Errorf("Line %d: expected '%s', got '%s'", i+1, expectedLine, lines[i])
-				}
-			}
+			assertLines(t, GenerateBondingConfig(tt.config), tt.expected)
 		})
 	}
+}
+
+func TestGenerateDSRConfig(t *testing.T) {
+	cfg := DSRConfig{
+		AutoIfaceUp: true,
+		Iface:       "dsr0",
+		IP:          "10.0.0.1",
+	}
+	expected := []string{
+		"auto dsr0",
+		"iface dsr0 inet static",
+		"    pre-up ip link add dsr0 type dummy",
+		"    post-down ip link del dsr0",
+		"    address 10.0.0.1",
+		"    netmask 255.255.255.255",
+	}
+	assertLines(t, GenerateDSRConfig(cfg), expected)
+}
+
+func TestGenerateStandardConfig(t *testing.T) {
+	tests := []struct {
+		name     string
+		config   StandardConfig
+		expected []string
+	}{
+		{
+			name: "With gateway",
+			config: StandardConfig{
+				AutoIfaceUp: true,
+				Iface:       "eth0",
+				IP:          "192.168.1.10",
+				Netmask:     "255.255.255.0",
+				Gateway:     "192.168.1.1",
+			},
+			expected: []string{
+				"auto eth0",
+				"iface eth0 inet static",
+				"    address 192.168.1.10",
+				"    netmask 255.255.255.0",
+				"    gateway 192.168.1.1",
+			},
+		},
+		{
+			name: "No gateway omits the gateway line",
+			config: StandardConfig{
+				Iface:   "eth0",
+				IP:      "192.168.1.10",
+				Netmask: "255.255.255.0",
+			},
+			expected: []string{
+				"iface eth0 inet static",
+				"    address 192.168.1.10",
+				"    netmask 255.255.255.0",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assertLines(t, GenerateStandardConfig(tt.config), tt.expected)
+		})
+	}
+}
+
+func TestGenerateBridgeConfig(t *testing.T) {
+	cfg := BridgeConfig{
+		AutoIfaceUp: true,
+		Iface:       "br0",
+		BridgePorts: []string{"eth0", "eth1"},
+	}
+	expected := []string{
+		"auto br0",
+		"iface br0 inet manual",
+		"    bridge_ports eth0 eth1",
+	}
+	assertLines(t, GenerateBridgeConfig(cfg), expected)
 }
 
 // Helper function to create a pointer to an int

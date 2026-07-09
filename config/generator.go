@@ -15,19 +15,11 @@ func GenerateBondingConfig(cfg BondingConfig) string {
 	sb.WriteString(fmt.Sprintf("iface %s inet static\n", cfg.Iface))
 	sb.WriteString(fmt.Sprintf("    address %s\n", cfg.IP))
 	sb.WriteString(fmt.Sprintf("    netmask %s\n", cfg.Netmask))
-	sb.WriteString(fmt.Sprintf("    gateway %s\n", cfg.Gateway))
-
-	// Ensure bond-master is at the beginning of bond-slaves
-	slaves := make([]string, 0, len(cfg.BondSlaves)+1)
-	slaves = append(slaves, cfg.BondMaster)
-	for _, slave := range cfg.BondSlaves {
-		if slave != cfg.BondMaster {
-			slaves = append(slaves, slave)
-		}
+	if cfg.Gateway != "" {
+		sb.WriteString(fmt.Sprintf("    gateway %s\n", cfg.Gateway))
 	}
 
-	sb.WriteString(fmt.Sprintf("    bond-master %s\n", cfg.BondMaster))
-	sb.WriteString(fmt.Sprintf("    bond-slaves %s\n", strings.Join(slaves, " ")))
+	sb.WriteString(fmt.Sprintf("    bond-slaves %s\n", strings.Join(cfg.BondSlaves, " ")))
 
 	// Use default value 100 if BondMiimon is nil
 	miimon := 100
@@ -55,7 +47,7 @@ func GenerateDSRConfig(cfg DSRConfig) string {
 
 	sb.WriteString(fmt.Sprintf("iface %s inet static\n", cfg.Iface))
 	sb.WriteString(fmt.Sprintf("    pre-up ip link add %s type dummy\n", cfg.Iface))
-	sb.WriteString(fmt.Sprintf("    pre-down ip link add %s type dummy\n", cfg.Iface))
+	sb.WriteString(fmt.Sprintf("    post-down ip link del %s\n", cfg.Iface))
 	sb.WriteString(fmt.Sprintf("    address %s\n", cfg.IP))
 	sb.WriteString("    netmask 255.255.255.255\n")
 
@@ -72,7 +64,9 @@ func GenerateStandardConfig(cfg StandardConfig) string {
 	sb.WriteString(fmt.Sprintf("iface %s inet static\n", cfg.Iface))
 	sb.WriteString(fmt.Sprintf("    address %s\n", cfg.IP))
 	sb.WriteString(fmt.Sprintf("    netmask %s\n", cfg.Netmask))
-	sb.WriteString(fmt.Sprintf("    gateway %s\n", cfg.Gateway))
+	if cfg.Gateway != "" {
+		sb.WriteString(fmt.Sprintf("    gateway %s\n", cfg.Gateway))
+	}
 
 	return sb.String()
 }

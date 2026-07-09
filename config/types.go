@@ -8,7 +8,6 @@ type BondingConfig struct {
 	IP          string
 	Netmask     string
 	Gateway     string
-	BondMaster  string
 	BondSlaves  []string
 	BondMiimon  *int
 	BondMode    string

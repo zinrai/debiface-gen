@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/zinrai/debiface-gen/api"
 	"github.com/zinrai/debiface-gen/cli"
@@ -30,7 +31,10 @@ func main() {
 	if *serverMode {
 		startServer()
 	} else {
-		cli.Run()
+		if err := cli.Run(); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
 	}
 }
 
