@@ -12,14 +12,6 @@
 - Command-line interface
 - HTTP API
 
-## Installation
-
-Build the project:
-
-```bash
-$ go build
-```
-
 ## Usage
 
 ### Command-line Interface
